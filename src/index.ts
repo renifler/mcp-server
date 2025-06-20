@@ -5,18 +5,16 @@ import { z } from "zod";
 
 const RENIFLER_API_BASE = "https://api.renifler.io/v1";
 
+const getConfigValue = (name: string, fallback?: string): string | undefined => {
+    const commandArg = process.argv.find(arg => arg.startsWith(`--${name}=`));
+    if (commandArg) return commandArg.split('=')[1];
+    if (process.env[name] || process.env[name.toUpperCase()]) {
+        return process.env[name] || process.env[name.toUpperCase()];
+    }
+    return fallback;
+};
 
-// const getConfigValue = (name: string, fallback?: string): string | undefined => {
-//     const commandArg = process.argv.find(arg => arg.startsWith(`--${name}=`));
-//     if (commandArg) return commandArg.split('=')[1];
-//     if (process.env[name] || process.env[name.toUpperCase()]) {
-//         return process.env[name] || process.env[name.toUpperCase()];
-//     }
-//     return fallback;
-// };
-
-const RENIFLER_API_KEY = "";
-
+const RENIFLER_API_KEY = getConfigValue('renifler_api_key');
 
 const server = new McpServer({
     name: "@renifler/mcp-server",
@@ -104,16 +102,15 @@ server.registerTool(
         title: "Get detected technologies for a URL",
         description: "Performs a GET on the Renifler API to obtain the technologies of a website. Also displays the Lighthouse score.",
         inputSchema: {
-            url: z.string().url(),
-            apiKey: z.string().optional()
+            url: z.string().url()
         }
     },
     async (args: any) => {
         let urlStripped = args.url.replace(/^https?:\/\//, "");
         const urlParam = encodeURIComponent(urlStripped);
-        const apiKey = args.apiKey || RENIFLER_API_KEY;
+        const apiKey = RENIFLER_API_KEY;
         if (!apiKey) {
-            return { content: [{ type: "text", text: "No Renifler.io API key provided. Add it via the 'apiKey' parameter or the RENIFLER_API_KEY environment variable." }] };
+            return { content: [{ type: "text", text: "No Renifler.io API key provided. Add it via the RENIFLER_API_KEY environment variable." }] };
         }
         const resp = await fetch(`${RENIFLER_API_BASE}/get/${urlParam}`, {
             method: "GET",
